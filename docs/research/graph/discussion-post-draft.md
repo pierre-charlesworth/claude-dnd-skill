@@ -10,7 +10,7 @@ If you've run a campaign past a dozen sessions, you've probably seen the moment 
 
 This isn't a new problem, and it isn't unique to this skill. The continuity question — how an LLM-driven DM keeps a coherent picture of who-knows-whom across long-running campaigns — has been a running thread across the LLM-RPG community for as long as the community has existed. Every implementation we've seen has hit some version of it, and every implementation has tried something different in response.
 
-In this project, [@ethros19](https://github.com/ethros19) (Ethan Piper) first flagged it in [issue #7](https://github.com/Bobby-Gray/claude-dnd-skill/issues/7) back in v1.4 days, and has been the most consistent voice keeping us honest about long-context failure modes since — much of what's followed traces directly to that thread. We've shipped a few different methodologies since then:
+In this project, [@ethros19](https://github.com/ethros19) (Ethan Piper) first flagged it in [issue #7](https://github.com/neuralinitiative/claude-dnd-skill/issues/7) back in v1.4 days, and has been the most consistent voice keeping us honest about long-context failure modes since — much of what's followed traces directly to that thread. We've shipped a few different methodologies since then:
 
 - The **compaction-drift fix** — a hard rule in `SKILL.md` that the DM must re-read the source for any recap or status claim, never trust the compacted impression.
 - The **Live State Flags block** in `state.md` — cover, faction stances, NPC dispositions in compact key-value form. Designed to be the *first* thing re-read; cheap to keep in scope.

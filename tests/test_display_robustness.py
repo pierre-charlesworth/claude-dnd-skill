@@ -25,7 +25,8 @@ from unittest import mock
 
 
 REPO = Path(__file__).resolve().parent.parent
-DISPLAY = REPO / "display"
+SKILL = REPO / "skills" / "dnd" if (REPO / "skills" / "dnd").is_dir() else REPO
+DISPLAY = SKILL / "display"
 
 
 def _load_module(path: Path, name: str):

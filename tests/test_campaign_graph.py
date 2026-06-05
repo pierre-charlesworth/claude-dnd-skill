@@ -18,7 +18,10 @@ import textwrap
 import unittest
 
 REPO = pathlib.Path(__file__).resolve().parent.parent
-SCRIPT = REPO / "scripts" / "campaign_graph.py"
+# Code lives under skills/dnd/ in the plugin layout; fall back to the repo root
+# for a legacy standalone checkout.
+SKILL = REPO / "skills" / "dnd" if (REPO / "skills" / "dnd").is_dir() else REPO
+SCRIPT = SKILL / "scripts" / "campaign_graph.py"
 
 
 def _run(args, env_overrides=None, stdin_text=""):

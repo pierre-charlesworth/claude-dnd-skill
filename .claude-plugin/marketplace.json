@@ -1,0 +1,21 @@
+{
+  "name": "neural-initiative",
+  "owner": {
+    "name": "Neural Initiative",
+    "url": "https://github.com/neuralinitiative"
+  },
+  "metadata": {
+    "description": "Neural Initiative's Claude Code plugins.",
+    "version": "1.0.0"
+  },
+  "plugins": [
+    {
+      "name": "dm",
+      "source": "./",
+      "description": "Dungeon Master assistant for persistent D&D 5e campaigns — campaign/character management, combat, NPCs, dice, an optional live display companion, and full session state across sessions.",
+      "version": "2.0.0",
+      "license": "AGPL-3.0-or-later",
+      "keywords": ["dnd", "dungeons-and-dragons", "ttrpg", "5e", "dungeon-master", "game"]
+    }
+  ]
+}

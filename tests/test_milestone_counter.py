@@ -14,12 +14,13 @@ import sys
 import unittest
 
 REPO = pathlib.Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(REPO / "display"))
+SKILL = REPO / "skills" / "dnd" if (REPO / "skills" / "dnd").is_dir() else REPO
+sys.path.insert(0, str(SKILL / "display"))
 
 
 def _import_app():
     spec = importlib.util.spec_from_file_location(
-        "dnd_display_app", str(REPO / "display" / "dnd-display-app.py")
+        "dnd_display_app", str(SKILL / "display" / "dnd-display-app.py")
     )
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)

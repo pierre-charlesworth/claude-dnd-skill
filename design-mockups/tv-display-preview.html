@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>D&D TV Display — Preview</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400;1,6..72,500&display=swap" rel="stylesheet">
+<style>
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  :root{ --bar:56px; }
+  body{ height:100vh; overflow:hidden; font-family:'Syne',sans-serif;
+    background:#2a2722; color:#EDE6D6; display:flex; flex-direction:column; -webkit-font-smoothing:antialiased; }
+
+  /* ---------- control bar ---------- */
+  .controls{ height:var(--bar); flex:none; display:flex; align-items:center; gap:18px;
+    padding:0 18px; background:#1b1916; border-bottom:1px solid #34302a; }
+  .brand{ font-weight:800; font-size:14px; letter-spacing:.02em; text-transform:uppercase; }
+  .brand span{ color:#FF7A2D; }
+  .spacer{ flex:1; }
+  .seg{ display:flex; background:#252119; border:1px solid #38332b; border-radius:8px; overflow:hidden; }
+  .seg button{ font-family:inherit; font-weight:700; font-size:12px; letter-spacing:.06em; text-transform:uppercase;
+    color:#b8ae9c; background:transparent; border:0; padding:8px 14px; cursor:pointer; transition:.15s; white-space:nowrap; }
+  .seg button:hover{ color:#EDE6D6; }
+  .seg button.active{ background:#FF7A2D; color:#1b1916; }
+  .seg + .seg{ margin-left:2px; }
+  .toggle{ display:flex; align-items:center; gap:9px; font-size:12px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:#b8ae9c; }
+  .sw{ width:46px; height:24px; border-radius:100px; background:#3a342b; border:1px solid #4a4438; position:relative; cursor:pointer; transition:.2s; }
+  .sw::after{ content:""; position:absolute; top:2px; left:2px; width:18px; height:18px; border-radius:50%;
+    background:#EDE6D6; transition:.2s cubic-bezier(.2,.8,.2,1); }
+  body.is-light .sw{ background:#E5481E; border-color:#E5481E; }
+  body.is-light .sw::after{ left:24px; background:#fff; }
+  body.is-light .toggle .lm{ color:#FF7A2D; }
+  body:not(.is-light) .toggle .dm{ color:#FF7A2D; }
+  .hint{ font-size:11px; color:#6f685c; letter-spacing:.04em; }
+
+  /* ---------- stage ---------- */
+  .stage-wrap{ flex:1; min-height:0; display:grid; place-items:center; padding:16px;
+    background:#2a2722; background-image:radial-gradient(120% 90% at 50% 0%, #322e28, #232019); }
+  .screen{ container-type:size; aspect-ratio:16/9;
+    width:min(100%, calc((100vh - var(--bar) - 32px) * 16 / 9));
+    max-height:100%; position:relative; overflow:hidden; border-radius:5px;
+    box-shadow:0 40px 90px -30px rgba(0,0,0,.7), 0 0 0 1px rgba(0,0,0,.4);
+    background:var(--canvas); color:var(--text); }
+  .grain{ position:absolute; inset:0; pointer-events:none; z-index:6; opacity:.45;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    mix-blend-mode:var(--grain-blend); }
+  .stage{ position:absolute; inset:0; display:grid; }
+
+  .masthead{ grid-area:head; background:var(--block-strong); color:var(--on-strong);
+    display:flex; align-items:center; justify-content:space-between; padding:1.5cqw 2.4cqw; border-bottom:var(--block-key-strong); }
+  .title{ font-weight:800; font-size:2.4cqw; line-height:.92; letter-spacing:-.01em; }
+  .title b{ color:var(--accent); }
+  .meta{ font-weight:600; font-size:.86cqw; letter-spacing:.2em; text-transform:uppercase; opacity:.85; text-align:right; }
+
+  .story{ grid-area:story; padding:1.8cqw 2.4cqw .8cqw; display:flex; flex-direction:column; gap:1cqw; min-height:0; overflow:hidden;
+    -webkit-mask-image:linear-gradient(180deg,#000 86%,transparent 100%); mask-image:linear-gradient(180deg,#000 86%,transparent 100%); }
+  .kicker{ font-weight:800; font-size:.9cqw; letter-spacing:.24em; text-transform:uppercase; color:var(--accent);
+    display:inline-flex; align-items:center; gap:.7cqw; }
+  .kicker::before{ content:""; width:1.5cqw; height:.34cqw; background:var(--accent); }
+  .story p{ font-family:'Newsreader',serif; font-size:1.5cqw; line-height:1.5; color:var(--text); }
+  .story p .drop{ float:left; font-family:'Syne',sans-serif; font-weight:800; font-size:4.4cqw; line-height:.74; padding:.12cqw .36cqw 0 0; color:var(--accent); }
+
+  .npc{ grid-area:npc; position:relative; margin:1cqw 2.4cqw 1.2cqw; align-self:start;
+    background:var(--block); color:var(--on-block); padding:1.1cqw 1.3cqw; }
+  .npc::after{ content:""; position:absolute; inset:.55cqw -.55cqw -.55cqw .55cqw; border:.2cqw solid var(--accent); z-index:-1; }
+  .npc .who{ font-weight:800; font-size:.9cqw; letter-spacing:.16em; text-transform:uppercase; color:var(--accent); display:block; margin-bottom:.35cqw; }
+  .npc q{ font-family:'Newsreader',serif; font-style:italic; font-size:2.4cqw; line-height:1.22; quotes:'“' '”'; display:block; }
+
+  .party{ grid-area:party; background:var(--block-strong); color:var(--on-strong); padding:1.4cqw 1.3cqw;
+    border-left:var(--block-key-strong); display:flex; flex-direction:column; min-height:0; }
+  .party-head{ font-weight:800; font-size:1cqw; text-transform:uppercase; letter-spacing:.06em;
+    padding-bottom:.55cqw; margin-bottom:.8cqw; border-bottom:.14cqw solid var(--hairline-strong); }
+  .cards{ display:flex; flex-direction:column; gap:.75cqw; min-height:0; }
+  .card{ border-bottom:.12cqw solid var(--hairline-strong); padding-bottom:.7cqw; }
+  .card:last-child{ border-bottom:0; }
+  .nm{ font-weight:800; font-size:1.08cqw; text-transform:uppercase; line-height:1; }
+  .cl{ font-weight:600; font-size:.74cqw; letter-spacing:.1em; text-transform:uppercase; opacity:.55; margin:.22cqw 0 .5cqw; }
+  .hprow{ display:flex; align-items:center; gap:.55cqw; }
+  .hptrack{ flex:1; height:.58cqw; background:var(--track-strong); position:relative; overflow:hidden; }
+  .hpfill{ position:absolute; inset:0 auto 0 0; width:var(--pct); background:var(--accent); transition:width 1.2s cubic-bezier(.2,.8,.2,1); }
+  .hpnum{ font-weight:800; font-size:.9cqw; font-variant-numeric:tabular-nums; }
+  .chips{ display:flex; gap:.4cqw; margin-top:.5cqw; flex-wrap:wrap; }
+  .chip{ font-weight:700; font-size:.66cqw; letter-spacing:.05em; text-transform:uppercase; border:.1cqw solid var(--hairline-strong); padding:.16cqw .4cqw; }
+  .chip b{ color:var(--accent); }
+
+  .dice{ grid-area:dice; background:var(--accent); color:var(--dice-text); padding:1cqw 2.4cqw; display:flex; align-items:baseline; gap:1.1cqw; }
+  .dice .tag{ font-weight:800; font-size:.9cqw; letter-spacing:.12em; text-transform:uppercase; white-space:nowrap; }
+  .dice .roll{ font-weight:600; font-size:1.08cqw; }
+  .dice .hit{ font-weight:800; text-transform:uppercase; background:var(--text); color:var(--canvas); padding:0 .5cqw; }
+  .dice .total{ margin-left:auto; font-weight:800; font-size:1.45cqw; white-space:nowrap; }
+
+  /* themes (set on .screen) — "strong" vars drive masthead + party chrome */
+  .light{ --canvas:#F3EFE4; --text:#14110C; --block:#FBF8F0; --on-block:#14110C;
+    --block-strong:#FBF8F0; --on-strong:#14110C; --accent:#E5481E; --dice-text:#F3EFE4;
+    --track:rgba(20,17,12,.14); --track-strong:rgba(20,17,12,.14); --hairline-block:rgba(20,17,12,.16); --hairline-strong:rgba(20,17,12,.16);
+    --block-key:.16cqw solid rgba(20,17,12,.18); --block-key-strong:.16cqw solid rgba(20,17,12,.18); --grain-blend:multiply; }
+  .lightbold{ --canvas:#F3EFE4; --text:#14110C; --block:#FBF8F0; --on-block:#14110C;
+    --block-strong:#14110C; --on-strong:#F3EFE4; --accent:#E5481E; --dice-text:#F3EFE4;
+    --track:rgba(20,17,12,.14); --track-strong:rgba(243,239,228,.22); --hairline-block:rgba(20,17,12,.16); --hairline-strong:rgba(243,239,228,.24);
+    --block-key:.16cqw solid rgba(20,17,12,.18); --block-key-strong:none; --grain-blend:multiply; }
+  .dark{ --canvas:#16130E; --text:#E3DCCB; --block:#221C16; --on-block:#EDE6D6;
+    --block-strong:#221C16; --on-strong:#EDE6D6; --accent:#FF7A2D; --dice-text:#16130E;
+    --track:rgba(237,230,214,.14); --track-strong:rgba(237,230,214,.14); --hairline-block:rgba(237,230,214,.16); --hairline-strong:rgba(237,230,214,.16);
+    --block-key:.12cqw solid rgba(255,122,45,.4); --block-key-strong:.12cqw solid rgba(255,122,45,.4); --grain-blend:soft-light; }
+
+  /* iterations */
+  .itA .stage{ grid-template-columns:1fr .4fr; grid-template-rows:auto 1fr auto auto;
+    grid-template-areas:"head head" "story party" "npc party" "dice dice"; }
+  .itB .stage{ grid-template-columns:.34fr 1fr; grid-template-rows:auto 1fr auto auto;
+    grid-template-areas:"party head" "party story" "party npc" "dice dice"; }
+  .itB .party{ border-left:none; border-right:var(--block-key-strong); }
+  .itB .npc{ margin-left:0; }
+  .itC .stage{ grid-template-columns:1fr; grid-template-rows:auto auto 1fr auto auto;
+    grid-template-areas:"head" "story" "npc" "party" "dice"; }
+  .itC .story{ -webkit-mask-image:none; mask-image:none; }
+  .itC .npc{ margin:1.2cqw 2.4cqw; padding:1.6cqw 2cqw; align-self:stretch; display:flex; flex-direction:column; justify-content:center; }
+  .itC .npc q{ font-size:3.6cqw; line-height:1.15; }
+  .itC .npc .who{ font-size:1.05cqw; margin-bottom:.6cqw; }
+  .itC .party{ flex-direction:column; }
+  .itC .cards{ flex-direction:row; gap:1.4cqw; }
+  .itC .card{ flex:1; border-bottom:0; border-left:.12cqw solid var(--hairline-strong); padding:0 0 0 .8cqw; }
+  .itC .card:first-child{ border-left:0; padding-left:0; }
+</style>
+</head>
+<body class="">
+  <div class="controls">
+    <div class="brand">D&D Display · <span>Preview</span></div>
+    <div class="spacer"></div>
+    <span class="hint" style="font-weight:700;color:#b8ae9c;letter-spacing:.1em;text-transform:uppercase">Layout B · Gallery</span>
+    <div class="seg" id="themes">
+      <button data-t="dark" class="active">Dark</button>
+      <button data-t="lightbold">Bold</button>
+    </div>
+    <span class="hint">D / B = theme</span>
+  </div>
+
+  <div class="stage-wrap">
+    <section class="screen dark itB" id="screen"></section>
+  </div>
+
+  <script>
+    const CONTENT = `
+      <div class="grain"></div>
+      <div class="stage">
+        <header class="masthead">
+          <div class="title">THE PALE <b>LEDGER</b></div>
+          <div class="meta">Session 14<br>The Drowned Cup · 21:47</div>
+        </header>
+        <div class="story">
+          <div class="kicker">Scene — Dockside Standoff</div>
+          <p><span class="drop">T</span>he Drowned Cup goes quiet by degrees — the dice, the laughter, the fiddler who lets his bow drift off the string. Ben sets his cup down without a sound. Across the warped oak table, Sorn has not touched hers.</p>
+          <p>Lamplight catches a thin chain at her wrist — three pale tokens strung along it, bone or something close. Behind the bar a stool scrapes; two dockhands stop pretending to drink.</p>
+        </div>
+        <blockquote class="npc">
+          <span class="who">Sorn</span>
+          <q>I have pieces too. Some of yours match mine. So — what exactly did he show you?</q>
+        </blockquote>
+        <aside class="party">
+          <div class="party-head">The Party</div>
+          <div class="cards">
+            <div class="card"><div class="nm">Ben Bones</div><div class="cl">Half-Elf Rogue · 4</div>
+              <div class="hprow"><div class="hptrack"><div class="hpfill" style="--pct:87%"></div></div><div class="hpnum">27/31</div></div>
+              <div class="chips"><span class="chip">AC <b>15</b></span><span class="chip">DEX <b>+4</b></span><span class="chip">INIT <b>+4</b></span></div></div>
+            <div class="card"><div class="nm">Mira Vance</div><div class="cl">Human Cleric · 4</div>
+              <div class="hprow"><div class="hptrack"><div class="hpfill" style="--pct:88%"></div></div><div class="hpnum">30/34</div></div>
+              <div class="chips"><span class="chip">AC <b>18</b></span><span class="chip">WIS <b>+3</b></span></div></div>
+            <div class="card"><div class="nm">Thorne Kask</div><div class="cl">Dwarf Fighter · 5</div>
+              <div class="hprow"><div class="hptrack"><div class="hpfill" style="--pct:94%"></div></div><div class="hpnum">44/47</div></div>
+              <div class="chips"><span class="chip">AC <b>19</b></span><span class="chip">STR <b>+4</b></span></div></div>
+            <div class="card"><div class="nm">Quill Asher</div><div class="cl">Tiefling Wizard · 4</div>
+              <div class="hprow"><div class="hptrack"><div class="hpfill" style="--pct:86%"></div></div><div class="hpnum">19/22</div></div>
+              <div class="chips"><span class="chip">AC <b>12</b></span><span class="chip">INT <b>+4</b></span></div></div>
+          </div>
+        </aside>
+        <div class="dice">
+          <span class="tag">Ben Bones · Rapier</span>
+          <span class="roll">d20+5 = <b>22</b> vs AC 12 — <span class="hit">HIT!</span> · 1d8+1 = 9 piercing + 1d6 sneak</span>
+          <span class="total">13 TOTAL</span>
+        </div>
+      </div>`;
+
+    const screen = document.getElementById('screen');
+    screen.innerHTML = CONTENT;
+    let theme = 'dark', iter = 'itB';
+
+    function apply(){
+      screen.className = 'screen ' + theme + ' ' + iter;
+      document.body.classList.toggle('is-light', theme !== 'dark');
+      document.querySelectorAll('#iters button').forEach(b=>b.classList.toggle('active', b.dataset.it===iter));
+      document.querySelectorAll('#themes button').forEach(b=>b.classList.toggle('active', b.dataset.t===theme));
+    }
+    function setTheme(t){ theme = t; apply(); }
+
+    document.querySelectorAll('#themes button').forEach(b=>b.addEventListener('click',()=>setTheme(b.dataset.t)));
+    document.querySelectorAll('#iters button').forEach(b=>b.addEventListener('click',()=>{ iter=b.dataset.it; apply(); }));
+    addEventListener('keydown', e=>{
+      if(e.key==='1') { iter='itA'; apply(); }
+      if(e.key==='2') { iter='itB'; apply(); }
+      if(e.key==='3') { iter='itC'; apply(); }
+      if(e.key==='d'||e.key==='D') setTheme('dark');
+      if(e.key==='l'||e.key==='L') setTheme('light');
+      if(e.key==='b'||e.key==='B') setTheme('lightbold');
+    });
+    apply();
+  </script>
+</body>
+</html>

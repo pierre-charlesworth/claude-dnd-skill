@@ -27,6 +27,6 @@ The graph is the structural overlay that surfaces those facts cheaply during lon
 
 ## What's next
 
-Phase 2 is the deterministic verb-table extractor — pattern-matching on the v0.5 seed instead of an LLM pass. The plan is fully spec'd in [phase-2-3-plan.md](phase-2-3-plan.md). It needs three schema additions (`closed` field on state edges, `lifetime` column on verbs, `category_object_ok` flag) before it lands. Phase 2 reaches feature-parity with Phase 1 on the high-impact relationship classes (introductions, meetings, named relationships) at zero LLM cost, and is also what the LLM-agnostic [open-tabletop-gm](https://github.com/Bobby-Gray/open-tabletop-gm) fork will pick up when it merges.
+Phase 2 is the deterministic verb-table extractor — pattern-matching on the v0.5 seed instead of an LLM pass. The plan is fully spec'd in [phase-2-3-plan.md](phase-2-3-plan.md). It needs three schema additions (`closed` field on state edges, `lifetime` column on verbs, `category_object_ok` flag) before it lands. Phase 2 reaches feature-parity with Phase 1 on the high-impact relationship classes (introductions, meetings, named relationships) at zero LLM cost, and is also what the LLM-agnostic [open-tabletop-gm](https://github.com/neuralinitiative/open-tabletop-gm) fork will pick up when it merges.
 
 Phase 3 is the hybrid path: Phase 2 deterministic first, Haiku fallback only on sentences that didn't match a pattern. Defer until Phase 2 has soaked across multiple campaigns.

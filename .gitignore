@@ -1,10 +1,28 @@
-# Runtime files — generated during play, not part of the repo
-display/app.log
-display/app.pid
-display/stats.json
-display/text_log.json
-display/.token
-display/tracker.json
+# Runtime files — generated during play, not part of the repo.
+# Written into the display dir at runtime; in plugin installs they live under
+# the nested skills/dnd/display/ path, so match at any depth (**/display/).
+# Never commit them — they hold session state, auth tokens, and device
+# approvals specific to one host.
+**/display/app.log
+**/display/app.pid
+**/display/stats.json
+**/display/text_log.json
+**/display/tracker.json
+**/display/player_input.json
+**/display/input_log.json
+**/display/session_tail.json
+**/display/.token
+**/display/.scheme
+**/display/.campaign
+**/display/.input_queue
+**/display/.input_trigger
+**/display/.autorun-session
+**/display/.help-lock
+**/display/.approved_devices.json
+**/display/.pending_devices.json
+
+# Dev-only render screenshots from the redesign work
+design-mockups/renders/
 
 # SRD data runtime cache (individual pulled files) — not committed
 data/*.json.bak

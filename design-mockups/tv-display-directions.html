@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>D&D TV Display — Editorial Directions</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Archivo:wght@500;600;700;800&family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,400;1,9..144,500&family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Spectral:ital,wght@0,400;0,500;1,400;1,500&family=Syne:wght@600;700;800&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --gap: clamp(24px, 4vw, 64px);
+  }
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  html{ scroll-behavior:smooth; }
+  body{
+    background:#5c5750;
+    background-image:
+      radial-gradient(120% 80% at 50% -10%, #6b665d 0%, #4a463f 60%, #3a362f 100%);
+    font-family:'Archivo',sans-serif;
+    color:#fff;
+    padding: clamp(20px,4vw,72px) 0 96px;
+    -webkit-font-smoothing:antialiased;
+  }
+
+  /* ---------- page chrome ---------- */
+  .page-head{
+    width:min(95vw,1280px);
+    margin:0 auto clamp(20px,3vw,40px);
+    display:flex; align-items:flex-end; justify-content:space-between;
+    gap:24px; flex-wrap:wrap;
+    border-bottom:2px solid rgba(255,255,255,.22);
+    padding-bottom:18px;
+  }
+  .page-head h1{
+    font-family:'Archivo Black',sans-serif;
+    font-size:clamp(20px,2.6vw,34px);
+    line-height:1; letter-spacing:-.01em; text-transform:uppercase;
+  }
+  .page-head h1 span{ color:#ff7a2d; }
+  .page-head p{
+    font-size:13px; letter-spacing:.18em; text-transform:uppercase;
+    opacity:.7; max-width:46ch; line-height:1.6;
+  }
+  .legend{ display:flex; gap:10px; flex-wrap:wrap; margin-top:10px; }
+  .legend a{
+    font-size:11.5px; letter-spacing:.16em; text-transform:uppercase;
+    text-decoration:none; color:#fff; opacity:.8;
+    border:1px solid rgba(255,255,255,.3); padding:6px 12px; border-radius:100px;
+    transition:.2s;
+  }
+  .legend a:hover{ opacity:1; background:#fff; color:#3a362f; }
+
+  .panel-label{
+    width:min(95vw,1280px); margin:clamp(40px,6vw,84px) auto clamp(14px,1.6vw,22px);
+    display:flex; align-items:baseline; gap:16px; flex-wrap:wrap;
+  }
+  .panel-label .n{
+    font-family:'Archivo Black',sans-serif; font-size:clamp(26px,3.4vw,46px);
+    line-height:.9; letter-spacing:-.02em;
+  }
+  .panel-label .t{
+    font-family:'Archivo Black',sans-serif; font-size:clamp(15px,1.5vw,20px);
+    text-transform:uppercase; letter-spacing:.02em;
+  }
+  .panel-label .d{ font-size:13px; letter-spacing:.04em; opacity:.65; max-width:54ch; line-height:1.5; }
+
+  /* ---------- shared screen frame ---------- */
+  .screen{
+    container-type:size;
+    aspect-ratio:16/9;
+    width:min(95vw,1280px);
+    margin:0 auto;
+    position:relative; overflow:hidden;
+    display:grid; grid-template-rows:auto minmax(0,1fr) auto;
+    box-shadow:0 40px 80px -30px rgba(0,0,0,.6), 0 0 0 1px rgba(0,0,0,.2);
+    border-radius:4px;
+  }
+  .grain{ position:absolute; inset:0; pointer-events:none; z-index:5; opacity:.5;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    mix-blend-mode:overlay; }
+
+  .masthead{ display:flex; justify-content:space-between; align-items:baseline; }
+  .title-row{ display:flex; align-items:baseline; gap:1.4cqw; }
+  .stage{ display:grid; grid-template-columns:1fr 0.42fr; min-height:0; }
+  .narration{ display:flex; flex-direction:column; min-height:0; position:relative; }
+  .scroll{ display:flex; flex-direction:column; gap:1.3cqw; overflow:hidden;
+    -webkit-mask-image:linear-gradient(180deg,#000 80%,transparent 100%);
+            mask-image:linear-gradient(180deg,#000 80%,transparent 100%); }
+  .party{ display:flex; flex-direction:column; min-height:0; }
+  .cards{ display:flex; flex-direction:column; gap:.85cqw; min-height:0; }
+
+  /* HP bar fill animation */
+  .hpfill{ width:0; animation:hp 1.4s cubic-bezier(.2,.8,.2,1) forwards; }
+  @keyframes hp{ to{ width:var(--pct); } }
+
+  /* load reveal */
+  .reveal{ opacity:0; transform:translateY(14px); }
+  .in .reveal{ animation:rise .8s cubic-bezier(.2,.8,.2,1) forwards; }
+  .in .reveal:nth-child(2){ animation-delay:.08s; }
+  .in .reveal:nth-child(3){ animation-delay:.16s; }
+  .in .reveal:nth-child(4){ animation-delay:.24s; }
+  .in .reveal:nth-child(5){ animation-delay:.32s; }
+  @keyframes rise{ to{ opacity:1; transform:none; } }
+  @media (prefers-reduced-motion:reduce){
+    .reveal{ opacity:1; transform:none; } .hpfill{ animation:none; width:var(--pct); }
+  }
+
+  /* =========================================================
+     DIRECTION 1 — FULL EDITORIAL (light paper, ink, vermilion)
+     ========================================================= */
+  .d1{ background:#F3EFE4; color:#14110C; }
+  .d1 .masthead{ padding:2.4cqw 3cqw 1.2cqw; border-bottom:.28cqw solid #14110C; }
+  .d1 .title{ font-family:'Archivo Black',sans-serif; font-size:2.9cqw; line-height:.9;
+    text-transform:uppercase; letter-spacing:-.02em; }
+  .d1 .title b{ color:#E5481E; }
+  .d1 .sub{ font-family:'Archivo',sans-serif; font-weight:700; font-size:.95cqw;
+    letter-spacing:.34em; text-transform:uppercase; align-self:flex-end; }
+  .d1 .meta{ font-weight:600; font-size:.95cqw; letter-spacing:.26em; text-transform:uppercase;
+    text-align:right; line-height:1.7; opacity:.8; }
+  .d1 .stage{ padding:1.8cqw 3cqw 1cqw; gap:3cqw; }
+  .d1 .kicker{ font-family:'Archivo',sans-serif; font-weight:800; font-size:.95cqw;
+    letter-spacing:.3em; text-transform:uppercase; color:#E5481E; margin-bottom:.4cqw;
+    display:flex; align-items:center; gap:.8cqw; }
+  .d1 .kicker::after{ content:""; flex:1; height:.12cqw; background:#14110C; opacity:.25; }
+  .d1 .narration p{ font-family:'Fraunces',serif; font-size:1.46cqw; line-height:1.5;
+    font-optical-sizing:auto; }
+  .d1 .narration p .drop{ float:left; font-family:'Archivo Black',sans-serif;
+    font-size:5cqw; line-height:.72; padding:.1cqw .35cqw 0 0; color:#E5481E; }
+  .d1 .npc{ position:relative; padding:.4cqw 0 .4cqw 1.6cqw; margin:.2cqw 0; }
+  .d1 .npc::before{ content:""; position:absolute; left:0; top:.3cqw; bottom:.3cqw;
+    width:.4cqw; background:#E5481E; }
+  .d1 .npc .who{ font-family:'Archivo Black',sans-serif; font-size:.95cqw; letter-spacing:.18em;
+    text-transform:uppercase; display:block; margin-bottom:.3cqw; }
+  .d1 .npc q{ font-family:'Fraunces',serif; font-style:italic; font-weight:500;
+    font-size:2.9cqw; line-height:1.18; quotes:'“' '”'; display:block; }
+  .d1 .party-head{ font-family:'Archivo Black',sans-serif; font-size:1.1cqw; text-transform:uppercase;
+    letter-spacing:.08em; padding-bottom:.6cqw; margin-bottom:.85cqw; border-bottom:.28cqw solid #14110C; }
+  .d1 .card{ border:.16cqw solid rgba(20,17,12,.28); padding:.75cqw .85cqw; background:#FBF8F0; }
+  .d1 .card .nm{ font-family:'Archivo Black',sans-serif; font-size:1.18cqw; text-transform:uppercase;
+    line-height:1; letter-spacing:-.01em; }
+  .d1 .card .cl{ font-family:'Archivo',sans-serif; font-weight:600; font-size:.82cqw;
+    letter-spacing:.14em; text-transform:uppercase; opacity:.6; margin:.25cqw 0 .55cqw; }
+  .d1 .hprow{ display:flex; align-items:center; gap:.6cqw; }
+  .d1 .hptrack{ flex:1; height:.7cqw; border:.14cqw solid #14110C; position:relative; }
+  .d1 .hpfill{ position:absolute; inset:0 auto 0 0; background:#E5481E; }
+  .d1 .hpnum{ font-family:'Archivo Black',sans-serif; font-size:1cqw; font-variant-numeric:tabular-nums; }
+  .d1 .chips{ display:flex; gap:.45cqw; margin-top:.55cqw; flex-wrap:wrap; }
+  .d1 .chip{ font-family:'Archivo',sans-serif; font-weight:700; font-size:.72cqw; letter-spacing:.06em;
+    text-transform:uppercase; border:.13cqw solid rgba(20,17,12,.4); padding:.18cqw .42cqw; }
+  .d1 .chip b{ color:#E5481E; }
+  .d1 .dice{ background:#14110C; color:#F3EFE4; padding:1.1cqw 3cqw; display:flex; align-items:baseline; gap:1.2cqw;
+    font-family:'Archivo',sans-serif; }
+  .d1 .dice .tag{ font-family:'Archivo Black',sans-serif; font-size:.95cqw; letter-spacing:.16em;
+    text-transform:uppercase; color:#E5481E; white-space:nowrap; }
+  .d1 .dice .roll{ font-weight:600; font-size:1.15cqw; letter-spacing:.02em; }
+  .d1 .dice .hit{ color:#E5481E; font-family:'Archivo Black',sans-serif; }
+  .d1 .dice .total{ margin-left:auto; font-family:'Archivo Black',sans-serif; font-size:1.5cqw; white-space:nowrap; }
+
+  /* =========================================================
+     DIRECTION 2 — DARK EDITORIAL (warm near-black, bone, ember)
+     ========================================================= */
+  .d2{ background:#16130E; color:#EDE6D6; }
+  .d2 .grain{ mix-blend-mode:soft-light; opacity:.6; }
+  .d2 .masthead{ padding:2.4cqw 3cqw 1.2cqw; border-bottom:.18cqw solid rgba(237,230,214,.32); }
+  .d2 .title{ font-family:'Bricolage Grotesque',sans-serif; font-weight:800; font-size:2.9cqw;
+    line-height:.9; letter-spacing:-.02em; }
+  .d2 .title b{ color:#FF7A2D; }
+  .d2 .sub{ font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:.95cqw;
+    letter-spacing:.3em; text-transform:uppercase; align-self:flex-end; opacity:.7; }
+  .d2 .meta{ font-weight:600; font-size:.92cqw; letter-spacing:.24em; text-transform:uppercase;
+    text-align:right; line-height:1.7; opacity:.62; }
+  .d2 .stage{ padding:1.8cqw 3cqw 1cqw; gap:3cqw; }
+  .d2 .kicker{ font-family:'Bricolage Grotesque',sans-serif; font-weight:800; font-size:.95cqw;
+    letter-spacing:.28em; text-transform:uppercase; color:#FF7A2D; margin-bottom:.5cqw;
+    display:flex; align-items:center; gap:.8cqw; }
+  .d2 .kicker::after{ content:""; flex:1; height:.1cqw; background:rgba(237,230,214,.28); }
+  .d2 .narration p{ font-family:'Spectral',serif; font-size:1.5cqw; line-height:1.55; color:#E3DCCB; }
+  .d2 .narration p .drop{ float:left; font-family:'Bricolage Grotesque',sans-serif; font-weight:800;
+    font-size:5cqw; line-height:.72; padding:.2cqw .4cqw 0 0; color:#FF7A2D; }
+  .d2 .npc{ position:relative; padding:.4cqw 0 .4cqw 1.6cqw; }
+  .d2 .npc::before{ content:""; position:absolute; left:0; top:.3cqw; bottom:.3cqw; width:.4cqw;
+    background:#FF7A2D; box-shadow:0 0 2.4cqw rgba(255,122,45,.5); }
+  .d2 .npc .who{ font-family:'Bricolage Grotesque',sans-serif; font-weight:800; font-size:.95cqw;
+    letter-spacing:.18em; text-transform:uppercase; color:#FF7A2D; display:block; margin-bottom:.3cqw; }
+  .d2 .npc q{ font-family:'Spectral',serif; font-style:italic; font-weight:500; font-size:2.95cqw;
+    line-height:1.2; quotes:'“' '”'; display:block; color:#F4EEDF; }
+  .d2 .party-head{ font-family:'Bricolage Grotesque',sans-serif; font-weight:800; font-size:1.1cqw;
+    text-transform:uppercase; letter-spacing:.06em; padding-bottom:.6cqw; margin-bottom:.85cqw;
+    border-bottom:.18cqw solid rgba(237,230,214,.32); }
+  .d2 .card{ border:.12cqw solid rgba(237,230,214,.18); padding:.75cqw .85cqw;
+    background:linear-gradient(180deg,rgba(255,255,255,.035),transparent); }
+  .d2 .card .nm{ font-family:'Bricolage Grotesque',sans-serif; font-weight:800; font-size:1.18cqw;
+    text-transform:uppercase; line-height:1; }
+  .d2 .card .cl{ font-family:'Bricolage Grotesque',sans-serif; font-weight:600; font-size:.8cqw;
+    letter-spacing:.14em; text-transform:uppercase; opacity:.5; margin:.25cqw 0 .55cqw; }
+  .d2 .hprow{ display:flex; align-items:center; gap:.6cqw; }
+  .d2 .hptrack{ flex:1; height:.7cqw; background:rgba(237,230,214,.12); position:relative; overflow:hidden; }
+  .d2 .hpfill{ position:absolute; inset:0 auto 0 0;
+    background:linear-gradient(90deg,#FF7A2D,#ffb066); }
+  .d2 .hpnum{ font-family:'Bricolage Grotesque',sans-serif; font-weight:800; font-size:1cqw;
+    font-variant-numeric:tabular-nums; }
+  .d2 .chips{ display:flex; gap:.45cqw; margin-top:.55cqw; flex-wrap:wrap; }
+  .d2 .chip{ font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:.72cqw;
+    letter-spacing:.06em; text-transform:uppercase; border:.1cqw solid rgba(237,230,214,.28);
+    padding:.18cqw .42cqw; }
+  .d2 .chip b{ color:#FF7A2D; }
+  .d2 .dice{ background:#FF7A2D; color:#16130E; padding:1.1cqw 3cqw; display:flex; align-items:baseline; gap:1.2cqw;
+    font-family:'Bricolage Grotesque',sans-serif; }
+  .d2 .dice .tag{ font-weight:800; font-size:.95cqw; letter-spacing:.14em; text-transform:uppercase; white-space:nowrap; }
+  .d2 .dice .roll{ font-weight:600; font-size:1.15cqw; }
+  .d2 .dice .hit{ font-weight:800; text-transform:uppercase; }
+  .d2 .dice .total{ margin-left:auto; font-weight:800; font-size:1.5cqw; white-space:nowrap; }
+
+  /* =========================================================
+     DIRECTION 3 — HYBRID / RISOGRAPH DUOTONE (bone + navy + coral)
+     ========================================================= */
+  .d3{ background:#EAE3D2; color:#1F2A44; }
+  .d3 .grain{ opacity:.4; }
+  .d3 .masthead{ background:#1F2A44; color:#EAE3D2; padding:2cqw 3cqw 1.7cqw; align-items:center; }
+  .d3 .title{ font-family:'Syne',sans-serif; font-weight:800; font-size:2.7cqw; line-height:.92;
+    letter-spacing:-.01em; }
+  .d3 .title b{ color:#F0533B; }
+  .d3 .sub{ font-family:'Syne',sans-serif; font-weight:700; font-size:.92cqw; letter-spacing:.26em;
+    text-transform:uppercase; color:#F0533B; align-self:center; }
+  .d3 .meta{ font-family:'Syne',sans-serif; font-weight:600; font-size:.9cqw; letter-spacing:.2em;
+    text-transform:uppercase; text-align:right; line-height:1.7; opacity:.85; }
+  .d3 .stage{ padding:1.9cqw 3cqw 1cqw; gap:2.6cqw; }
+  .d3 .kicker{ font-family:'Syne',sans-serif; font-weight:800; font-size:.92cqw; letter-spacing:.24em;
+    text-transform:uppercase; color:#F0533B; margin-bottom:.55cqw; display:inline-flex; align-items:center; gap:.7cqw; }
+  .d3 .kicker::before{ content:""; width:1.6cqw; height:.36cqw; background:#F0533B; }
+  .d3 .narration p{ font-family:'Newsreader',serif; font-size:1.55cqw; line-height:1.5; }
+  .d3 .narration p .drop{ float:left; font-family:'Syne',sans-serif; font-weight:800; font-size:4.8cqw;
+    line-height:.74; padding:.15cqw .38cqw 0 0; color:#F0533B; }
+  .d3 .npc{ position:relative; margin:.3cqw 0; padding:1cqw 1.2cqw; background:#1F2A44; color:#EAE3D2; }
+  .d3 .npc::after{ content:""; position:absolute; inset:.55cqw -.55cqw -.55cqw .55cqw; border:.2cqw solid #F0533B; z-index:-1; }
+  .d3 .npc .who{ font-family:'Syne',sans-serif; font-weight:800; font-size:.92cqw; letter-spacing:.16em;
+    text-transform:uppercase; color:#F0533B; display:block; margin-bottom:.35cqw; }
+  .d3 .npc q{ font-family:'Newsreader',serif; font-style:italic; font-size:2.55cqw; line-height:1.22;
+    quotes:'“' '”'; display:block; }
+  .d3 .party{ }
+  .d3 .party-inner{ background:#1F2A44; color:#EAE3D2; padding:1cqw 1.05cqw; height:100%;
+    display:flex; flex-direction:column; min-height:0; }
+  .d3 .party-head{ font-family:'Syne',sans-serif; font-weight:800; font-size:1.05cqw; text-transform:uppercase;
+    letter-spacing:.06em; padding-bottom:.55cqw; margin-bottom:.8cqw; border-bottom:.16cqw solid rgba(234,227,210,.3); }
+  .d3 .cards{ gap:.7cqw; }
+  .d3 .card{ border-bottom:.12cqw solid rgba(234,227,210,.16); padding-bottom:.7cqw; }
+  .d3 .card:last-child{ border-bottom:0; }
+  .d3 .card .nm{ font-family:'Syne',sans-serif; font-weight:800; font-size:1.12cqw; text-transform:uppercase; line-height:1; }
+  .d3 .card .cl{ font-family:'Syne',sans-serif; font-weight:600; font-size:.78cqw; letter-spacing:.12em;
+    text-transform:uppercase; opacity:.55; margin:.22cqw 0 .5cqw; }
+  .d3 .hprow{ display:flex; align-items:center; gap:.6cqw; }
+  .d3 .hptrack{ flex:1; height:.6cqw; background:rgba(234,227,210,.18); position:relative; overflow:hidden; }
+  .d3 .hpfill{ position:absolute; inset:0 auto 0 0; background:#F0533B; }
+  .d3 .hpnum{ font-family:'Syne',sans-serif; font-weight:800; font-size:.95cqw; font-variant-numeric:tabular-nums; color:#EAE3D2; }
+  .d3 .chips{ display:flex; gap:.4cqw; margin-top:.5cqw; flex-wrap:wrap; }
+  .d3 .chip{ font-family:'Syne',sans-serif; font-weight:700; font-size:.68cqw; letter-spacing:.05em;
+    text-transform:uppercase; border:.1cqw solid rgba(234,227,210,.32); padding:.16cqw .4cqw; }
+  .d3 .chip b{ color:#F0533B; }
+  .d3 .dice{ background:#F0533B; color:#1F2A44; padding:1.1cqw 3cqw; display:flex; align-items:baseline; gap:1.2cqw;
+    font-family:'Syne',sans-serif; }
+  .d3 .dice .tag{ font-weight:800; font-size:.92cqw; letter-spacing:.12em; text-transform:uppercase; white-space:nowrap; }
+  .d3 .dice .roll{ font-weight:600; font-size:1.12cqw; }
+  .d3 .dice .hit{ font-weight:800; text-transform:uppercase; background:#1F2A44; color:#F0533B; padding:0 .5cqw; }
+  .d3 .dice .total{ margin-left:auto; font-weight:800; font-size:1.5cqw; white-space:nowrap; }
+</style>
+</head>
+<body>
+
+  <header class="page-head">
+    <div>
+      <h1>TV Display — <span>Colossal</span> Directions</h1>
+      <div class="legend">
+        <a href="#d1">01 · Full Editorial</a>
+        <a href="#d2">02 · Dark Editorial</a>
+        <a href="#d3">03 · Riso Hybrid</a>
+      </div>
+    </div>
+    <p>Read-only big-screen view · 16:9 · same content, three aesthetics · pick one to take forward to the phone companion</p>
+  </header>
+
+  <!-- ============ DIRECTION 1 ============ -->
+  <div class="panel-label" id="d1">
+    <span class="n">01</span>
+    <span class="t">Full Editorial</span>
+    <span class="d">Light paper canvas, ink black, single vermilion accent. Archivo Black masthead + Fraunces narration. Boldest break from the dark-fantasy look.</span>
+  </div>
+  <section class="screen d1">
+    <div class="grain"></div>
+    <div class="masthead">
+      <div class="title-row">
+        <div class="title">THE PALE <b>LEDGER</b></div>
+        <div class="sub">A Coastal Campaign</div>
+      </div>
+      <div class="meta">Session 14<br>The Drowned Cup · 21:47</div>
+    </div>
+    <div class="stage">
+      <div class="narration">
+        <div class="kicker">Scene — Dockside Standoff</div>
+        <div class="scroll">
+          <p class="reveal"><span class="drop">T</span>he Drowned Cup goes quiet by degrees — first the dice, then the laughter, then the fiddler who lets his bow drift off the string. Ben sets his cup down without a sound. Across the warped oak table, Sorn has not touched hers.</p>
+          <p class="reveal">Her hand rests flat beside it, fingers spread, deliberate. The lamplight catches a thin chain at her wrist and the three pale tokens strung along it — bone, or something close to it.</p>
+          <blockquote class="npc reveal">
+            <span class="who">Sorn</span>
+            <q>I have pieces too. Some of yours match mine. So — what exactly did he show you?</q>
+          </blockquote>
+          <p class="reveal">Somewhere behind the bar a stool scrapes. Two dockhands have stopped pretending to drink. Ben's thumb finds the rapier's guard under the table — the old reflex.</p>
+        </div>
+      </div>
+      <aside class="party">
+        <div class="party-head">The Party</div>
+        <div class="cards">
+          <div class="card"><div class="nm">Ben Bones</div><div class="cl">Half-Elf Rogue · 4</div>
+            <div class="hprow"><div class="hptrack"><div class="hpfill" style="--pct:87%"></div></div><div class="hpnum">27/31</div></div>
+            <div class="chips"><span class="chip">AC <b>15</b></span><span class="chip">DEX <b>+4</b></span><span class="chip">INIT <b>+4</b></span></div></div>
+          <div class="card"><div class="nm">Mira Vance</div><div class="cl">Human Cleric · 4</div>
+            <div class="hprow"><div class="hptrack"><div class="hpfill" style="--pct:88%"></div></div><div class="hpnum">30/34</div></div>
+            <div class="chips"><span class="chip">AC <b>18</b></span><span class="chip">WIS <b>+3</b></span></div></div>
+          <div class="card"><div class="nm">Thorne Kask</div><div class="cl">Dwarf Fighter · 5</div>
+            <div class="hprow"><div class="hptrack"><div class="hpfill" style="--pct:94%"></div></div><div class="hpnum">44/47</div></div>
+            <div class="chips"><span class="chip">AC <b>19</b></span><span class="chip">STR <b>+4</b></span></div></div>
+          <div class="card"><div class="nm">Quill Asher</div><div class="cl">Tiefling Wizard · 4</div>
+            <div class="hprow"><div class="hptrack"><div class="hpfill" style="--pct:86%"></div></div><div class="hpnum">19/22</div></div>
+            <div class="chips"><span class="chip">AC <b>12</b></span><span class="chip">INT <b>+4</b></span></div></div>
+        </div>
+      </aside>
+    </div>
+    <div class="dice">
+      <span class="tag">Ben Bones · Rapier</span>
+      <span class="roll">d20+5 = <b>22</b> vs AC 12 — <span class="hit">HIT!</span> · 1d8+1 = 9 piercing + 1d6 sneak</span>
+      <span class="total">13 TOTAL</span>
+    </div>
+  </section>
+
+  <!-- ============ DIRECTION 2 ============ -->
+  <div class="panel-label" id="d2">
+    <span class="n">02</span>
+    <span class="t">Dark Editorial</span>
+    <span class="d">Colossal's grid &amp; type discipline on an atmospheric near-black palette. Bricolage Grotesque + Spectral, molten-ember accent. Cinematic but still clearly a magazine, not a vellum scroll.</span>
+  </div>
+  <section class="screen d2">
+    <div class="grain"></div>
+    <div class="masthead">
+      <div class="title-row">
+        <div class="title">THE PALE <b>LEDGER</b></div>
+        <div class="sub">A Coastal Campaign</div>
+      </div>
+      <div class="meta">Session 14<br>The Drowned Cup · 21:47</div>
+    </div>
+    <div class="stage">
+      <div class="narration">
+        <div class="kicker">Scene — Dockside Standoff</div>
+        <div class="scroll">
+          <p class="reveal"><span class="drop">T</span>he Drowned Cup goes quiet by degrees — first the dice, then the laughter, then the fiddler who lets his bow drift off the string. Ben sets his cup down without a sound. Across the warped oak table, Sorn has not touched hers.</p>
+          <p class="reveal">Her hand rests flat beside it, fingers spread, deliberate. The lamplight catches a thin chain at her wrist and the three pale tokens strung along it — bone, or something close to it.</p>
+          <blockquote class="npc reveal">
+            <span class="who">Sorn</span>
+            <q>I have pieces too. Some of yours match mine. So — what exactly did he show you?</q>
+          </blockquote>
+          <p class="reveal">Somewhere behind the bar a stool scrapes. Two dockhands have stopped pretending to drink. Ben's thumb finds the rapier's guard under the table — the old reflex.</p>
+        </div>
+      </div>
+      <aside class="party">
+        <div class="party-head">The Party</div>
+        <div class="cards">
+          <div class="card"><div class="nm">Ben Bones</div><div class="cl">Half-Elf Rogue · 4</div>
+            <div class="hprow"><div class="hptrack"><div class="hpfill" style="--pct:87%"></div></div><div class="hpnum">27/31</div></div>
+            <div class="chips"><span class="chip">AC <b>15</b></span><span class="chip">DEX <b>+4</b></span><span class="chip">INIT <b>+4</b></span></div></div>
+          <div class="card"><div class="nm">Mira Vance</div><div class="cl">Human Cleric · 4</div>
+            <div class="hprow"><div class="hptrack"><div class="hpfill" style="--pct:88%"></div></div><div class="hpnum">30/34</div></div>
+            <div class="chips"><span class="chip">AC <b>18</b></span><span class="chip">WIS <b>+3</b></span></div></div>
+          <div class="card"><div class="nm">Thorne Kask</div><div class="cl">Dwarf Fighter · 5</div>
+            <div class="hprow"><div class="hptrack"><div class="hpfill" style="--pct:94%"></div></div><div class="hpnum">44/47</div></div>
+            <div class="chips"><span class="chip">AC <b>19</b></span><span class="chip">STR <b>+4</b></span></div></div>
+          <div class="card"><div class="nm">Quill Asher</div><div class="cl">Tiefling Wizard · 4</div>
+            <div class="hprow"><div class="hptrack"><div class="hpfill" style="--pct:86%"></div></div><div class="hpnum">19/22</div></div>
+            <div class="chips"><span class="chip">AC <b>12</b></span><span class="chip">INT <b>+4</b></span></div></div>
+        </div>
+      </aside>
+    </div>
+    <div class="dice">
+      <span class="tag">Ben Bones · Rapier</span>
+      <span class="roll">d20+5 = <b>22</b> vs AC 12 — <span class="hit">HIT!</span> · 1d8+1 = 9 piercing + 1d6 sneak</span>
+      <span class="total">13 TOTAL</span>
+    </div>
+  </section>
+
+  <!-- ============ DIRECTION 3 ============ -->
+  <div class="panel-label" id="d3">
+    <span class="n">03</span>
+    <span class="t">Riso Hybrid</span>
+    <span class="d">The middle path: a warm bone canvas with a navy + coral duotone, print/risograph feel. Syne display + Newsreader serif. Editorial structure, but with color-blocked panels that give it more game-night warmth than 01.</span>
+  </div>
+  <section class="screen d3">
+    <div class="grain"></div>
+    <div class="masthead">
+      <div class="title-row">
+        <div class="title">THE PALE <b>LEDGER</b></div>
+        <div class="sub">A Coastal Campaign</div>
+      </div>
+      <div class="meta">Session 14<br>The Drowned Cup · 21:47</div>
+    </div>
+    <div class="stage">
+      <div class="narration">
+        <div class="kicker">Scene — Dockside Standoff</div>
+        <div class="scroll">
+          <p class="reveal"><span class="drop">T</span>he Drowned Cup goes quiet by degrees — first the dice, then the laughter, then the fiddler who lets his bow drift off the string. Ben sets his cup down without a sound. Across the warped oak table, Sorn has not touched hers.</p>
+          <p class="reveal">Her hand rests flat beside it, fingers spread, deliberate. The lamplight catches a thin chain at her wrist and the three pale tokens strung along it — bone, or something close to it.</p>
+          <blockquote class="npc reveal">
+            <span class="who">Sorn</span>
+            <q>I have pieces too. Some of yours match mine. So — what exactly did he show you?</q>
+          </blockquote>
+          <p class="reveal">Somewhere behind the bar a stool scrapes. Two dockhands have stopped pretending to drink. Ben's thumb finds the rapier's guard under the table — the old reflex.</p>
+        </div>
+      </div>
+      <aside class="party">
+        <div class="party-inner">
+          <div class="party-head">The Party</div>
+          <div class="cards">
+            <div class="card"><div class="nm">Ben Bones</div><div class="cl">Half-Elf Rogue · 4</div>
+              <div class="hprow"><div class="hptrack"><div class="hpfill" style="--pct:87%"></div></div><div class="hpnum">27/31</div></div>
+              <div class="chips"><span class="chip">AC <b>15</b></span><span class="chip">DEX <b>+4</b></span><span class="chip">INIT <b>+4</b></span></div></div>
+            <div class="card"><div class="nm">Mira Vance</div><div class="cl">Human Cleric · 4</div>
+              <div class="hprow"><div class="hptrack"><div class="hpfill" style="--pct:88%"></div></div><div class="hpnum">30/34</div></div>
+              <div class="chips"><span class="chip">AC <b>18</b></span><span class="chip">WIS <b>+3</b></span></div></div>
+            <div class="card"><div class="nm">Thorne Kask</div><div class="cl">Dwarf Fighter · 5</div>
+              <div class="hprow"><div class="hptrack"><div class="hpfill" style="--pct:94%"></div></div><div class="hpnum">44/47</div></div>
+              <div class="chips"><span class="chip">AC <b>19</b></span><span class="chip">STR <b>+4</b></span></div></div>
+            <div class="card"><div class="nm">Quill Asher</div><div class="cl">Tiefling Wizard · 4</div>
+              <div class="hprow"><div class="hptrack"><div class="hpfill" style="--pct:86%"></div></div><div class="hpnum">19/22</div></div>
+              <div class="chips"><span class="chip">AC <b>12</b></span><span class="chip">INT <b>+4</b></span></div></div>
+          </div>
+        </div>
+      </aside>
+    </div>
+    <div class="dice">
+      <span class="tag">Ben Bones · Rapier</span>
+      <span class="roll">d20+5 = <b>22</b> vs AC 12 — <span class="hit">HIT!</span> · 1d8+1 = 9 piercing + 1d6 sneak</span>
+      <span class="total">13 TOTAL</span>
+    </div>
+  </section>
+
+  <script>
+    // reveal panels as they scroll into view
+    const io = new IntersectionObserver((entries)=>{
+      entries.forEach(e=>{ if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target); } });
+    },{threshold:.25});
+    document.querySelectorAll('.screen').forEach(s=>io.observe(s));
+  </script>
+</body>
+</html>

@@ -12,7 +12,8 @@ import textwrap
 import unittest
 
 REPO = pathlib.Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(REPO / "scripts"))
+SKILL = REPO / "skills" / "dnd" if (REPO / "skills" / "dnd").is_dir() else REPO
+sys.path.insert(0, str(SKILL / "scripts"))
 
 import graph_extract_deterministic as det  # noqa: E402
 

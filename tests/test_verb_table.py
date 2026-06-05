@@ -10,7 +10,8 @@ import unittest
 import yaml
 
 REPO = pathlib.Path(__file__).resolve().parent.parent
-SEED = REPO / "data" / "graph" / "verb_table_seed.yaml"
+SKILL = REPO / "skills" / "dnd" if (REPO / "skills" / "dnd").is_dir() else REPO
+SEED = SKILL / "data" / "graph" / "verb_table_seed.yaml"
 
 
 class VerbTableSeedTests(unittest.TestCase):
