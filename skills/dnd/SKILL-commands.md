@@ -330,12 +330,20 @@ On confirmation:
    - **Source anchor** — chunk number or page so it can be re-verified against `source/`.
    This is detail that must survive verbatim; the Adventure Nodes and Campaign Arc are only the index into it.
 
-   **Multi-chunk imports: assemble from fragments, do not re-derive from memory.** The agents already wrote this content in final format. Concatenate their fragments in chunk order rather than reconstructing it in your context (which would reintroduce the compaction the fan-out avoided): `cat ~/.claude/dnd/.import-work/<source-stem>/chunk-*.encounters.md > ~/.claude/dnd/campaigns/<name>/encounters-full.md`. Then open the result only for light touch-ups (a leading title, fixing any duplicated heading), not a full rewrite. Single-chunk imports: write it directly from the extraction you read inline.
+   **Multi-chunk imports: assemble by reference, never by content.** The agents already wrote this content in final format on disk. Combine the fragments with a single shell command that references them **by glob path only** — run it directly via Bash:
+   ```bash
+   cat ~/.claude/dnd/.import-work/<source-stem>/chunk-*.encounters.md > ~/.claude/dnd/campaigns/<name>/encounters-full.md
+   ```
+   **The encounter text must never appear in the command, in a generated script, in a heredoc, or in any tool argument.** The moment you write a fragment's verbatim text into a `cat <<EOF`, a `python` string, an `echo`, or a Write/Edit payload, that bulk has passed back through your context — which is exactly the compaction the fan-out exists to prevent, and it defeats the whole design. Concatenation is a file operation on paths; the contents stay on disk and flow straight into the output file untouched. **Do not read the fragments to verify them and do not "rebuild" the file** — trust the glob. If a leading title or a duplicate heading needs fixing afterward, use a *targeted* `Edit` against that one heading line, never a full rewrite. Single-chunk imports (no fragments): write the file directly from the extraction you read inline.
 
 6. Write **npcs.md** index table (one row per NPC: name, role, location, one-line demeanor) — built from the receipts, not the fragments.
 
 7. Write **npcs-full.md** — full entry per named NPC (role, motivation, secret, speech quirk, faction; relationships to other NPCs, min 2 each; stat block summary if present).
-   - **Multi-chunk:** concatenate the NPC fragments — `cat ~/.claude/dnd/.import-work/<source-stem>/chunk-*.npcs.md > ~/.claude/dnd/campaigns/<name>/npcs-full.md` — then open it once to **merge duplicate entries** for NPCs that appeared in more than one chunk and to add the cross-NPC relationship links (the only part that needs a view across chunks; entries are small, so this stays well within context).
+   - **Multi-chunk:** concatenate the NPC fragments **by reference**, the same way as encounters — run directly via Bash, with no NPC text in the command or any generated script/heredoc:
+     ```bash
+     cat ~/.claude/dnd/.import-work/<source-stem>/chunk-*.npcs.md > ~/.claude/dnd/campaigns/<name>/npcs-full.md
+     ```
+     The one cross-chunk fix-up that genuinely needs a view across entries — merging an NPC that appeared in more than one chunk, and adding relationship links — is done with **targeted `Edit`s on the assembled file** (small old/new strings against the specific entries), not by reading every entry and rewriting the whole file. Use the receipt's NPC list to spot which names recurred across chunks, so you only open the entries that actually need merging.
    - **Single-chunk:** write directly from the inline extraction.
 
 8. Write **state.md** from template:
