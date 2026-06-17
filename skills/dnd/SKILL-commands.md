@@ -259,8 +259,14 @@ each chunk as meaningful: indented or boxed blocks are usually read-aloud text o
 DM-only callouts, and those carry the encounter details that must survive import.
 
 ### Step 2 — Analyse structure
-Read the extracted text and identify:
-- **Campaign title and system**
+
+**First decide the path by chunk count** (`--chunks` from Step 1):
+
+- **One chunk (source under 4000 words):** read it inline in this context and extract directly. No agents.
+- **More than one chunk:** you **must** fan the analysis out — **dispatch exactly one background agent per `--chunk N`, all in parallel**. Do **not** read chunks 2..N yourself in this context, and do **not** give one agent several chunks. Reading multiple chunks inline (or one agent walking several) accumulates the full text of every chunk in a single context, which gets **compacted before it finishes** and silently drops encounter details from the later chunks. One chunk per agent is the only path that keeps each context small enough to survive to completion. This is not optional for multi-chunk sources — skipping the fan-out is the single most common cause of import data loss.
+
+Each agent reads its one chunk (`import_campaign.py "<filepath>" --chunk N`) and identifies, **for that chunk only**:
+- **Campaign title and system** (whichever chunk carries it)
 - **Structure type:** `linear` (scene chain A→B→C) | `hub-and-spoke` (central hub + spoke locations, player-driven order) | `faction-web` (multi-faction city/complex, overlapping arcs)
 - **Acts and chapters** — numbered sections, chapter headings, or named scenes
 - **Key beats** — required story events the DM must deliver (boss reveals, faction turns, mandatory encounters)
@@ -271,18 +277,7 @@ Read the extracted text and identify:
 - **Quest hooks and seeds** — explicit adventure hooks, side quests, optional encounters
 - **Starting conditions** — where does the party begin, what level, what's the inciting event
 
-For large sources, read all chunks before proceeding.
-
-**Chunk processing — one chunk per background agent.** When fanning chunk
-analysis out to background agents, dispatch **exactly one `--chunk N` per agent**.
-Do not ask a single agent to walk several chunks in sequence: a multi-chunk agent
-accumulates the full text of every chunk in its context and gets **compacted
-before it finishes**, silently dropping encounter details from the later chunks
-it was supposed to extract. One chunk per agent keeps each context small enough to
-survive to completion. Each agent should return structured notes (acts, beats,
-NPCs, locations, factions, stat blocks, verbatim boxed/read-aloud text) for its
-single chunk; you then merge the returned notes. If a source is small enough to
-read in full (under 4000 words / one chunk), no agents are needed.
+Each agent returns structured notes (acts, beats, NPCs, locations, factions, stat blocks, verbatim boxed/read-aloud text) for its single chunk. Once all agents return, **merge the notes** into the unified structure used by Steps 3–5. Only the merged notes — never raw re-reads of every chunk — should live in this context.
 
 ### Step 3 — Confirm campaign name
 If `[campaign-name]` not supplied, suggest one from the title and ask to confirm.
