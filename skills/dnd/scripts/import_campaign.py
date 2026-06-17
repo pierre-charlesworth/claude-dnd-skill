@@ -13,6 +13,7 @@ Usage:
   python3 import_campaign.py <filepath> --info     # print file info + page/word count only
   python3 import_campaign.py <filepath> --chunk N  # print chunk N of ~4000 words (for large PDFs)
   python3 import_campaign.py <filepath> --chunks   # print total number of chunks
+  python3 import_campaign.py <filepath> --index    # print a chunk -> headings map of the whole source
 
 Output is UTF-8 plain text, written to stdout. Claude reads this and maps it to campaign files.
 """
@@ -159,6 +160,50 @@ def total_chunks(text: str) -> int:
     return len(build_chunks(text))
 
 
+def build_index(text: str, chunk_words: int = CHUNK_WORDS) -> list:
+    """Return [(chunk_index, [headings...]), ...] for the whole source.
+
+    Walks the same chunks ``--chunk N`` produces and lists the section/encounter
+    headings found in each, using the same heuristic that guides chunk
+    boundaries. The result is a lookup table: given a detail described by its
+    heading, the DM can find which chunk holds it and jump straight there with
+    ``--chunk N`` instead of scanning the source. Backstops material that was
+    never keyed into ``encounters-full.md`` (unkeyed rooms, lore sidebars,
+    rules callouts), which carry no per-encounter source anchor.
+    """
+    index = []
+    for i, chunk in enumerate(build_chunks(text, chunk_words)):
+        headings = [
+            line.strip()
+            for line in chunk.splitlines()
+            if _looks_like_heading(line)
+        ]
+        index.append((i, headings))
+    return index
+
+
+def format_index(path: str, text: str) -> str:
+    """Render build_index() as a markdown document for source/index.md."""
+    out = [
+        f"# Source index — {os.path.basename(path)}",
+        "",
+        "Chunk -> headings map of the preserved source. To re-verify or",
+        "re-extract a detail, find its heading below and run:",
+        "",
+        f"    python3 import_campaign.py source/{os.path.basename(path)} --chunk N",
+        "",
+    ]
+    for i, headings in build_index(text):
+        if headings:
+            out.append(f"## Chunk {i}")
+            out.extend(f"- {h}" for h in headings)
+        else:
+            out.append(f"## Chunk {i}")
+            out.append("- _(no headings detected — body text continuation)_")
+        out.append("")
+    return "\n".join(out).rstrip("\n") + "\n"
+
+
 def file_info(path: str, text: str) -> str:
     ext = os.path.splitext(path)[1].lower()
     wc = word_count(text)
@@ -179,6 +224,8 @@ def main():
     parser.add_argument("--chunks", action="store_true", help="Print total chunk count")
     parser.add_argument("--chunk", type=int, default=None, metavar="N",
                         help="Print chunk N (0-indexed, ~4000 words each)")
+    parser.add_argument("--index", action="store_true",
+                        help="Print a chunk -> headings map of the whole source")
     args = parser.parse_args()
 
     if not os.path.exists(args.filepath):
@@ -197,6 +244,8 @@ def main():
 
     if args.info:
         print(file_info(args.filepath, text))
+    elif args.index:
+        print(format_index(args.filepath, text), end="")
     elif args.chunks:
         print(total_chunks(text))
     elif args.chunk is not None:

@@ -80,5 +80,39 @@ class ChunkingPreservesLayoutTests(unittest.TestCase):
         self.assertEqual(ic.build_chunks(""), [""])
 
 
+class SourceIndexTests(unittest.TestCase):
+
+    def test_index_has_one_entry_per_chunk(self):
+        self.assertEqual(len(ic.build_index(SAMPLE)), ic.total_chunks(SAMPLE))
+        # Same chunk width must yield the same number of entries.
+        self.assertEqual(len(ic.build_index(SAMPLE, chunk_words=10)),
+                         len(ic.build_chunks(SAMPLE, chunk_words=10)))
+
+    def test_index_captures_headings(self):
+        # Whole sample fits one chunk; both headings should be listed under chunk 0.
+        index = ic.build_index(SAMPLE)
+        self.assertEqual(index[0][0], 0)
+        headings = index[0][1]
+        self.assertIn("# Chapter 1: The Sunless Crypt", headings)
+        self.assertIn("AREA 3: THE GUARDIAN", headings)
+
+    def test_index_excludes_body_text(self):
+        headings = ic.build_index(SAMPLE)[0][1]
+        self.assertNotIn("The party arrives at the crypt entrance at dusk.", headings)
+
+    def test_format_index_is_markdown_with_chunk_refs(self):
+        out = ic.format_index("adventure.pdf", SAMPLE)
+        self.assertIn("# Source index — adventure.pdf", out)
+        self.assertIn("## Chunk 0", out)
+        self.assertIn("AREA 3: THE GUARDIAN", out)
+        self.assertIn("--chunk N", out)
+
+    def test_format_index_marks_headingless_chunks(self):
+        # A chunk made entirely of body text must still appear, flagged.
+        body = "\n".join(f"plain narration line number {i} here" for i in range(40))
+        out = ic.format_index("adventure.pdf", body)
+        self.assertIn("no headings detected", out)
+
+
 if __name__ == "__main__":
     unittest.main()
