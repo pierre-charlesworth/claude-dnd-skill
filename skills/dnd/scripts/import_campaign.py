@@ -94,20 +94,69 @@ def word_count(text: str) -> int:
     return len(text.split())
 
 
+def _looks_like_heading(line: str) -> bool:
+    """Heuristic: does this line look like a section/encounter heading?
+
+    Used to prefer chunk boundaries that fall *between* sections rather than
+    mid-encounter. Catches markdown headings (``# Area 3``) and the short
+    all-caps headings common in published adventures (``AREA 3: THE CRYPT``).
+    """
+    s = line.strip()
+    if not s:
+        return False
+    if s.startswith("#"):
+        return True
+    letters = [c for c in s if c.isalpha()]
+    if letters and len(s) <= 60 and all(c.isupper() for c in letters):
+        return True
+    return False
+
+
+def build_chunks(text: str, chunk_words: int = CHUNK_WORDS) -> list:
+    """Split text into ~chunk_words-sized chunks WITHOUT destroying layout.
+
+    Splits only on line boundaries (never mid-line), so headings, boxed
+    read-aloud text, stat blocks, tables, and bullet lists keep the structure
+    that ``pdftotext -layout`` produced. The previous implementation did
+    ``text.split()`` / ``" ".join()``, which collapsed every newline and indent
+    into a single wall of words — that flattening is what made important
+    encounter details (sidebars, boxed text, DM-only callouts) indistinguishable
+    from body prose and caused them to be dropped on import.
+
+    A new chunk is started either when adding the next line would overflow the
+    word budget, or — once the current chunk is at least half full — at the next
+    heading, so sections and encounters stay intact across the boundary.
+    """
+    lines = text.splitlines()
+    chunks = []
+    current = []
+    current_words = 0
+    for line in lines:
+        n = len(line.split())
+        if current and (
+            current_words + n > chunk_words
+            or (current_words >= chunk_words // 2 and _looks_like_heading(line))
+        ):
+            chunks.append("\n".join(current))
+            current = []
+            current_words = 0
+        current.append(line)
+        current_words += n
+    if current:
+        chunks.append("\n".join(current))
+    return chunks or [""]
+
+
 def chunk_text(text: str, chunk_index: int) -> str:
-    """Return chunk N (0-indexed) of ~CHUNK_WORDS words."""
-    words = text.split()
-    start = chunk_index * CHUNK_WORDS
-    end = start + CHUNK_WORDS
-    chunk_words = words[start:end]
-    if not chunk_words:
-        return ""
-    return " ".join(chunk_words)
+    """Return chunk N (0-indexed), preserving layout. Empty string if out of range."""
+    chunks = build_chunks(text)
+    if 0 <= chunk_index < len(chunks):
+        return chunks[chunk_index]
+    return ""
 
 
 def total_chunks(text: str) -> int:
-    wc = word_count(text)
-    return max(1, (wc + CHUNK_WORDS - 1) // CHUNK_WORDS)
+    return len(build_chunks(text))
 
 
 def file_info(path: str, text: str) -> str:

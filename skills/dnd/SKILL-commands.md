@@ -123,6 +123,7 @@ Full step-by-step procedures for all `/dm:dnd` slash commands. Load this file at
    - **state.md contains `## DM Style Notes`** — read and internalize before narrating anything. These are table-specific calibration patterns that override default DM instincts.
    - **world.md:** Load in full — World Foundations and active Adventure Nodes both inform narration and faction moves. Do NOT read `world-seeds.md` at load (generation artifact, not live reference).
    - **npcs.md:** Index row only at load. **Before writing substantive dialogue or decisions for any named NPC, read their full entry in `npcs-full.md`.** Do not wait for an explicit `/dm:dnd npc [name]` call — do it proactively when a scene centers on that character. Index rows carry surface traits only; personality axes, relationships, and hidden goals are in the full entry.
+   - **encounters-full.md (imported campaigns):** Do NOT load at start. **Before running any imported encounter or keyed area, read its full entry in `encounters-full.md` first — do not run it from the Adventure Node one-liner, the Campaign Arc beat, or memory.** The node/beat is only an index; the read-aloud text, triggers, DCs, tactics, stat blocks, and treasure live in the full entry, and these are exactly the details that get smoothed over when improvised from a summary. Do this proactively the moment the party commits toward an encounter, the same way you re-read an NPC entry before substantive dialogue. If the full entry looks thin or an important detail is missing, re-extract it from the preserved copy in `source/` (`python3 ${CLAUDE_SKILL_DIR}/scripts/import_campaign.py source/<file> --chunk N`) rather than filling the gap from memory.
    - **Do NOT read session-log.md at load** — recent events are already in `state.md → ## Recent Events`. Only read session-log.md if the player explicitly requests a recap, or if DM Calibration from the last 1-2 sessions is needed and not already internalized.
 6. Push full party stats to display sidebar. **CRITICAL:** use `--json` with a complete player object — **never** the `--player` shorthand here. `--player` only updates existing fields; it cannot populate the card or sheet tabs. The display shows "Full sheet not loaded" when `sheet` is absent.
 
@@ -250,12 +251,20 @@ For short sources (under 4000 words), read in full:
 python3 ${CLAUDE_SKILL_DIR}/scripts/import_campaign.py "<filepath>"
 ```
 
+Chunks preserve the source's layout (headings, indented read-aloud/boxed text,
+stat blocks, tables) — they are **not** flattened to a single line of words.
+Boundaries fall between lines, and prefer section/encounter headings, so an
+encounter's setup and payoff are not split mid-paragraph. Treat the structure in
+each chunk as meaningful: indented or boxed blocks are usually read-aloud text or
+DM-only callouts, and those carry the encounter details that must survive import.
+
 ### Step 2 — Analyse structure
 Read the extracted text and identify:
 - **Campaign title and system**
 - **Structure type:** `linear` (scene chain A→B→C) | `hub-and-spoke` (central hub + spoke locations, player-driven order) | `faction-web` (multi-faction city/complex, overlapping arcs)
 - **Acts and chapters** — numbered sections, chapter headings, or named scenes
 - **Key beats** — required story events the DM must deliver (boss reveals, faction turns, mandatory encounters)
+- **Encounters / keyed areas** — for each, capture the detail **verbatim** (read-aloud/boxed text, triggers, DCs and saves, tactics, stat blocks, treasure, branch outcomes). This is the material that goes into `encounters-full.md` in Step 5; do not reduce it to a one-line summary here.
 - **Locations** — distinct named places with descriptions
 - **NPCs** — names, roles, motivations, relationships, stat blocks if present
 - **Factions** — groups with agendas, relationships to party
@@ -263,6 +272,17 @@ Read the extracted text and identify:
 - **Starting conditions** — where does the party begin, what level, what's the inciting event
 
 For large sources, read all chunks before proceeding.
+
+**Chunk processing — one chunk per background agent.** When fanning chunk
+analysis out to background agents, dispatch **exactly one `--chunk N` per agent**.
+Do not ask a single agent to walk several chunks in sequence: a multi-chunk agent
+accumulates the full text of every chunk in its context and gets **compacted
+before it finishes**, silently dropping encounter details from the later chunks
+it was supposed to extract. One chunk per agent keeps each context small enough to
+survive to completion. Each agent should return structured notes (acts, beats,
+NPCs, locations, factions, stat blocks, verbatim boxed/read-aloud text) for its
+single chunk; you then merge the returned notes. If a source is small enough to
+read in full (under 4000 words / one chunk), no agents are needed.
 
 ### Step 3 — Confirm campaign name
 If `[campaign-name]` not supplied, suggest one from the title and ask to confirm.
@@ -275,7 +295,7 @@ Title:    <source title>
 Type:     structured / <structure type>
 Acts:     N  |  Chapters: N  |  Key beats: N
 NPCs:     N named  |  Factions: N
-Locations: N distinct
+Locations: N distinct  |  Full encounters: N
 
 Campaign name: <name>
 Campaign dir:  ~/.claude/dnd/campaigns/<name>/
@@ -287,33 +307,44 @@ Proceed? [y/n]
 On confirmation:
 
 1. `mkdir -p ~/.claude/dnd/campaigns/<name>/characters`
-2. Copy templates from `${CLAUDE_SKILL_DIR}/templates/`
-3. Write **world.md**:
+2. **Preserve the source.** `mkdir -p ~/.claude/dnd/campaigns/<name>/source` and copy the original file in (`cp "<filepath>" ~/.claude/dnd/campaigns/<name>/source/`). This is the authoritative fallback: if any encounter detail is ever in doubt during play, the DM can re-extract it with `import_campaign.py` against the copy — even in a fresh container where the original path is gone.
+3. Copy templates from `${CLAUDE_SKILL_DIR}/templates/`
+4. Write **world.md**:
    - `## World Foundations` — setting, geography, tone, magic level, calendar if present
    - `## Three Truths` — one settlement, one threat, one mystery (drawn from source)
    - `## Threat Escalation Arc` — map source acts to the 5-stage table; set stage 1
    - `## Factions` — all factions with archetype, current activity, relationship to party
    - `## Quest Seed Bank` — all explicit hooks + 2–3 implied side threads
-   - `## Adventure Nodes` — named locations with one-line descriptions
+   - `## Adventure Nodes` — named locations with one-line descriptions. **Each node line must cross-reference its full entry in `encounters-full.md`** (e.g. `→ encounters-full.md § Area 3`) so the index points back to the detail rather than standing in for it.
 
-4. Write **npcs.md** index table (one row per NPC: name, role, location, one-line demeanor)
+5. Write **encounters-full.md** — the encounter analogue of `npcs-full.md`, and the single most important anti-data-loss file. One section per distinct encounter / keyed area / set-piece scene in the source. For each, capture the detail **faithfully, not as a summary**:
+   - **Verbatim boxed / read-aloud text** — quote it; do not paraphrase.
+   - **Trigger** — what causes the encounter to start or escalate.
+   - **Mechanics** — exact DCs, saves, skill checks, traps, secret doors, environmental effects.
+   - **Tactics** — how creatures behave, target priority, retreat/reinforcement conditions.
+   - **Stat blocks** — full block (or named SRD reference + any source-specific deltas), one per creature type present.
+   - **Treasure / outcomes** — what's found, what changes in the world, branch consequences.
+   - **Source anchor** — chunk number or page so it can be re-verified against `source/`.
+   This is detail that must survive verbatim; the Adventure Nodes and Campaign Arc are only the index into it.
 
-5. Write **npcs-full.md** — full entry for each named NPC:
+6. Write **npcs.md** index table (one row per NPC: name, role, location, one-line demeanor)
+
+7. Write **npcs-full.md** — full entry for each named NPC:
    - Role, motivation, secret, speech quirk, faction affiliation
    - Relationships to other NPCs (min 2 per NPC)
    - Stat block summary if present in source
 
-6. Write **state.md** from template:
+8. Write **state.md** from template:
    - Populate `## Current Situation` — starting location and party placeholder
    - Populate `## World State` — in-world date if given, factions, threat arc stage 1
-   - Populate `## Campaign Arc` — full act/chapter structure with key beats, telegraph scenes, and steering notes (see format in template)
+   - Populate `## Campaign Arc` — full act/chapter structure with key beats, telegraph scenes, and steering notes (see format in template). Each chapter/beat should reference its `encounters-full.md` section rather than restating the detail.
    - Leave `## Active Quests`, `## Session Flags`, `## DM Style Notes` as template defaults
 
-7. Write **session-log.md** with Session 0 import record:
+9. Write **session-log.md** with Session 0 import record:
    ```
    ## Session 0 — Import — <date>
-   Source: <filepath>
-   Imported: <N> acts, <N> chapters, <N> NPCs, <N> locations
+   Source: <filepath>  (copy preserved at source/)
+   Imported: <N> acts, <N> chapters, <N> NPCs, <N> locations, <N> full encounters
    ```
 
 ### Step 6 — Gap-fill wizard
