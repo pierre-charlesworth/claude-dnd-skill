@@ -265,19 +265,23 @@ DM-only callouts, and those carry the encounter details that must survive import
 - **One chunk (source under 4000 words):** read it inline in this context and extract directly. No agents.
 - **More than one chunk:** you **must** fan the analysis out. First **state the plan in one line** so it is visible — e.g. *"12 chunks → dispatching 12 agents, one per chunk."* Then **dispatch exactly one agent per `--chunk N`, all in a single message so they run in parallel, and wait for every one to return before continuing.** Do **not** read chunks 2..N yourself in this context, do **not** give one agent several chunks, and do **not** proceed to Step 3 with only some agents back. Reading multiple chunks inline (or one agent walking several) accumulates the full text of every chunk in a single context, which gets **compacted before it finishes** and silently drops encounter details from the later chunks. One chunk per agent is the only path that keeps each context small enough to survive to completion. This is not optional for multi-chunk sources — skipping the fan-out is the single most common cause of import data loss.
 
-Each agent reads its one chunk (`import_campaign.py "<filepath>" --chunk N`) and identifies, **for that chunk only**:
-- **Campaign title and system** (whichever chunk carries it)
-- **Structure type:** `linear` (scene chain A→B→C) | `hub-and-spoke` (central hub + spoke locations, player-driven order) | `faction-web` (multi-faction city/complex, overlapping arcs)
-- **Acts and chapters** — numbered sections, chapter headings, or named scenes
-- **Key beats** — required story events the DM must deliver (boss reveals, faction turns, mandatory encounters)
-- **Encounters / keyed areas** — for each, capture the detail **verbatim** (read-aloud/boxed text, triggers, DCs and saves, tactics, stat blocks, treasure, branch outcomes). This is the material that goes into `encounters-full.md` in Step 5; do not reduce it to a one-line summary here.
-- **Locations** — distinct named places with descriptions
-- **NPCs** — names, roles, motivations, relationships, stat blocks if present
-- **Factions** — groups with agendas, relationships to party
-- **Quest hooks and seeds** — explicit adventure hooks, side quests, optional encounters
-- **Starting conditions** — where does the party begin, what level, what's the inciting event
+**The aim is that no context — neither an agent's nor your own — ever grows large enough to compact during chunking.** One chunk per agent bounds each *agent*. To bound *your own* context, the bulky verbatim material must travel **chunk → disk, never chunk → your context**: each agent writes its extraction to a fragment file, and returns to you only a compact, summary-level receipt. You assemble the heavy files from the fragments on disk without ever reading them all into context.
 
-Each agent returns structured notes (acts, beats, NPCs, locations, factions, stat blocks, verbatim boxed/read-aloud text) for its single chunk. Once all agents return, **merge the notes** into the unified structure used by Steps 3–5. Only the merged notes — never raw re-reads of every chunk — should live in this context.
+Before dispatching, create a work dir: `mkdir -p ~/.claude/dnd/.import-work/<source-stem>` (a scratch area; Step 5 assembles from it, then removes it).
+
+Each agent reads its one chunk (`import_campaign.py "<filepath>" --chunk N`) and **writes two fragment files** for that chunk only:
+- `.import-work/<source-stem>/chunk-NN.encounters.md` — every encounter / keyed area / set-piece in the chunk, each as a full section in the **exact `encounters-full.md` format from Step 5.5** (verbatim boxed/read-aloud text, trigger, mechanics with exact DCs/saves, tactics, stat blocks, treasure/outcomes, and a `Source anchor: chunk N`). Quote verbatim; do not summarise. This is the material that must survive import.
+- `.import-work/<source-stem>/chunk-NN.npcs.md` — a full entry per named NPC in the chunk (role, motivation, secret, speech quirk, faction, relationships, stat block if present), in the **`npcs-full.md` format from Step 5.7**.
+
+Each agent then **returns only a compact receipt** — no verbatim text, no stat blocks. The receipt is summary-level and small by construction:
+- **Title / system / structure type** (`linear` | `hub-and-spoke` | `faction-web`) if this chunk carries it
+- **Acts / chapters** present (headings only) and **key beats** (one line each)
+- **Encounter headings** written to the fragment (names + source anchor), so you can build the Adventure Nodes index
+- **NPC names** written to the fragment, with one-line role/demeanor for the `npcs.md` index
+- **Factions, locations, quest hooks** (names + one line each)
+- **Starting conditions** if present (where the party begins, level, inciting event)
+
+Once **all** agents return, you hold only N small receipts — never the verbatim bulk. Merge the receipts into the unified summary used by Steps 3–4. The fragment files stay on disk for Step 5 to assemble.
 
 ### Step 3 — Confirm campaign name
 If `[campaign-name]` not supplied, suggest one from the title and ask to confirm.
@@ -312,7 +316,7 @@ On confirmation:
    - `## Quest Seed Bank` — all explicit hooks + 2–3 implied side threads
    - `## Adventure Nodes` — named locations with one-line descriptions. **Each node line must cross-reference its full entry in `encounters-full.md`** (e.g. `→ encounters-full.md § Area 3`) so the index points back to the detail rather than standing in for it.
 
-5. Write **encounters-full.md** — the encounter analogue of `npcs-full.md`, and the single most important anti-data-loss file. One section per distinct encounter / keyed area / set-piece scene in the source. For each, capture the detail **faithfully, not as a summary**:
+5. Write **encounters-full.md** — the encounter analogue of `npcs-full.md`, and the single most important anti-data-loss file. One section per distinct encounter / keyed area / set-piece scene in the source. Each section format:
    - **Verbatim boxed / read-aloud text** — quote it; do not paraphrase.
    - **Trigger** — what causes the encounter to start or escalate.
    - **Mechanics** — exact DCs, saves, skill checks, traps, secret doors, environmental effects.
@@ -322,12 +326,13 @@ On confirmation:
    - **Source anchor** — chunk number or page so it can be re-verified against `source/`.
    This is detail that must survive verbatim; the Adventure Nodes and Campaign Arc are only the index into it.
 
-6. Write **npcs.md** index table (one row per NPC: name, role, location, one-line demeanor)
+   **Multi-chunk imports: assemble from fragments, do not re-derive from memory.** The agents already wrote this content in final format. Concatenate their fragments in chunk order rather than reconstructing it in your context (which would reintroduce the compaction the fan-out avoided): `cat ~/.claude/dnd/.import-work/<source-stem>/chunk-*.encounters.md > ~/.claude/dnd/campaigns/<name>/encounters-full.md`. Then open the result only for light touch-ups (a leading title, fixing any duplicated heading), not a full rewrite. Single-chunk imports: write it directly from the extraction you read inline.
 
-7. Write **npcs-full.md** — full entry for each named NPC:
-   - Role, motivation, secret, speech quirk, faction affiliation
-   - Relationships to other NPCs (min 2 per NPC)
-   - Stat block summary if present in source
+6. Write **npcs.md** index table (one row per NPC: name, role, location, one-line demeanor) — built from the receipts, not the fragments.
+
+7. Write **npcs-full.md** — full entry per named NPC (role, motivation, secret, speech quirk, faction; relationships to other NPCs, min 2 each; stat block summary if present).
+   - **Multi-chunk:** concatenate the NPC fragments — `cat ~/.claude/dnd/.import-work/<source-stem>/chunk-*.npcs.md > ~/.claude/dnd/campaigns/<name>/npcs-full.md` — then open it once to **merge duplicate entries** for NPCs that appeared in more than one chunk and to add the cross-NPC relationship links (the only part that needs a view across chunks; entries are small, so this stays well within context).
+   - **Single-chunk:** write directly from the inline extraction.
 
 8. Write **state.md** from template:
    - Populate `## Current Situation` — starting location and party placeholder
@@ -341,6 +346,8 @@ On confirmation:
    Source: <filepath>  (copy preserved at source/)
    Imported: <N> acts, <N> chapters, <N> NPCs, <N> locations, <N> full encounters
    ```
+
+10. **Clean up the work dir** (multi-chunk imports only): once `encounters-full.md` and `npcs-full.md` are assembled and verified non-empty, `rm -rf ~/.claude/dnd/.import-work/<source-stem>`. The preserved `source/` copy and `source/index.md` remain the durable fallback; the fragments were only scaffolding.
 
 ### Step 6 — Gap-fill wizard
 After writing files, identify anything the source left ambiguous:
