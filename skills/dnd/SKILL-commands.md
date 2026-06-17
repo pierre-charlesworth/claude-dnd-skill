@@ -267,11 +267,15 @@ DM-only callouts, and those carry the encounter details that must survive import
 
 **The aim is that no context — neither an agent's nor your own — ever grows large enough to compact during chunking.** One chunk per agent bounds each *agent*. To bound *your own* context, the bulky verbatim material must travel **chunk → disk, never chunk → your context**: each agent writes its extraction to a fragment file, and returns to you only a compact, summary-level receipt. You assemble the heavy files from the fragments on disk without ever reading them all into context.
 
-Before dispatching, create a work dir: `mkdir -p ~/.claude/dnd/.import-work/<source-stem>` (a scratch area; Step 5 assembles from it, then removes it).
+Before dispatching, create a work dir: `mkdir -p ~/.claude/dnd/.import-work/<source-stem>` (a scratch area; Step 5 assembles from it, then removes it). Substitute a concrete `<source-stem>` (e.g. the source filename without extension) and pass each agent **fully-resolved absolute paths** — never the `<...>` placeholders or a bare `chunk-NN.…` relative name.
 
-Each agent reads its one chunk (`import_campaign.py "<filepath>" --chunk N`) and **writes two fragment files** for that chunk only:
-- `.import-work/<source-stem>/chunk-NN.encounters.md` — every encounter / keyed area / set-piece in the chunk, each as a full section in the **exact `encounters-full.md` format from Step 5.5** (verbatim boxed/read-aloud text, trigger, mechanics with exact DCs/saves, tactics, stat blocks, treasure/outcomes, and a `Source anchor: chunk N`). Quote verbatim; do not summarise. This is the material that must survive import.
-- `.import-work/<source-stem>/chunk-NN.npcs.md` — a full entry per named NPC in the chunk (role, motivation, secret, speech quirk, faction, relationships, stat block if present), in the **`npcs-full.md` format from Step 5.7**.
+Each agent does exactly two things, nothing else:
+1. **Reads** its one chunk by running the script **read-only** — `python3 ${CLAUDE_SKILL_DIR}/scripts/import_campaign.py "<filepath>" --chunk N` prints the chunk to stdout. The agent never modifies, edits, appends to, or writes any file under `${CLAUDE_SKILL_DIR}` or any `.py` file — the script is a tool it *runs*, not a file it touches.
+2. **Writes** exactly two new fragment files, at the absolute paths you give it and nowhere else:
+   - `~/.claude/dnd/.import-work/<source-stem>/chunk-NN.encounters.md` — every encounter / keyed area / set-piece in the chunk, each as a full section in the **exact `encounters-full.md` format from Step 5.5** (verbatim boxed/read-aloud text, trigger, mechanics with exact DCs/saves, tactics, stat blocks, treasure/outcomes, and a `Source anchor: chunk N`). Quote verbatim; do not summarise. This is the material that must survive import.
+   - `~/.claude/dnd/.import-work/<source-stem>/chunk-NN.npcs.md` — a full entry per named NPC in the chunk (role, motivation, secret, speech quirk, faction, relationships, stat block if present), in the **`npcs-full.md` format from Step 5.7**.
+
+   **Guardrail — make this explicit in every agent prompt:** the agent's only writes are these two `.md` fragment files under `.import-work/`. Writing chunk content into the import script, into any file under `${CLAUDE_SKILL_DIR}/scripts/`, or anywhere outside the work dir is a bug — if the intended fragment path is unclear, the agent must stop and report rather than write elsewhere.
 
 Each agent then **returns only a compact receipt** — no verbatim text, no stat blocks. The receipt is summary-level and small by construction:
 - **Title / system / structure type** (`linear` | `hub-and-spoke` | `faction-web`) if this chunk carries it
