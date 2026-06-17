@@ -250,6 +250,13 @@ For short sources (under 4000 words), read in full:
 python3 ${CLAUDE_SKILL_DIR}/scripts/import_campaign.py "<filepath>"
 ```
 
+Chunks preserve the source's layout (headings, indented read-aloud/boxed text,
+stat blocks, tables) — they are **not** flattened to a single line of words.
+Boundaries fall between lines, and prefer section/encounter headings, so an
+encounter's setup and payoff are not split mid-paragraph. Treat the structure in
+each chunk as meaningful: indented or boxed blocks are usually read-aloud text or
+DM-only callouts, and those carry the encounter details that must survive import.
+
 ### Step 2 — Analyse structure
 Read the extracted text and identify:
 - **Campaign title and system**
@@ -263,6 +270,17 @@ Read the extracted text and identify:
 - **Starting conditions** — where does the party begin, what level, what's the inciting event
 
 For large sources, read all chunks before proceeding.
+
+**Chunk processing — one chunk per background agent.** When fanning chunk
+analysis out to background agents, dispatch **exactly one `--chunk N` per agent**.
+Do not ask a single agent to walk several chunks in sequence: a multi-chunk agent
+accumulates the full text of every chunk in its context and gets **compacted
+before it finishes**, silently dropping encounter details from the later chunks
+it was supposed to extract. One chunk per agent keeps each context small enough to
+survive to completion. Each agent should return structured notes (acts, beats,
+NPCs, locations, factions, stat blocks, verbatim boxed/read-aloud text) for its
+single chunk; you then merge the returned notes. If a source is small enough to
+read in full (under 4000 words / one chunk), no agents are needed.
 
 ### Step 3 — Confirm campaign name
 If `[campaign-name]` not supplied, suggest one from the title and ask to confirm.
